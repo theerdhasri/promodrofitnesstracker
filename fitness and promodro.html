@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futuristic Productivity App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f16; /* Very dark background */
+        }
+        .container {
+            max-width: 600px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-button.active {
+            background-color: #3b82f6;
+            box-shadow: 0 0 10px #3b82f6, 0 0 20px #3b82f6;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(59, 130, 246, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(59, 130, 246, 1), 0 0 30px rgba(59, 130, 246, 0.8);
+            }
+        }
+        
+        /* Custom glowing shadow effects */
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+        }
+        .glow-purple {
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.5);
+        }
+        
+        .progress-bar-bg {
+            background-color: #1f2937;
+        }
+        
+        .progress-bar-fill {
+            background-image: linear-gradient(to right, #00C6FF, #0072FF);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4 text-white">
+    <div class="container bg-gray-900 p-8 rounded-2xl shadow-2xl space-y-8 border-t-2 border-b-2 border-gray-700">
+        
+        <!-- Tab Navigation -->
+        <div class="flex justify-around mb-4">
+            <button class="tab-button bg-gray-800 hover:bg-purple-600 text-white font-semibold py-2 px-6 rounded-full shadow-lg transition-all duration-300" onclick="showTab('pomodoro')">Pomodoro</button>
+            <button class="tab-button bg-gray-800 hover:bg-cyan-600 text-white font-semibold py-2 px-6 rounded-full shadow-lg transition-all duration-300" onclick="showTab('fitness')">Fitness</button>
+        </div>
+
+        <!-- Pomodoro Section -->
+        <div id="pomodoro" class="tab-content active text-center">
+            <h1 id="timer-label" class="text-3xl font-bold mb-2 text-purple-400">Work Session</h1>
+            <p id="timer-display" class="text-7xl font-light text-purple-200 tracking-wide glow-purple">25:00</p>
+            <div class="controls flex justify-center items-center space-x-4 mt-4">
+                <button id="start-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-8 rounded-full shadow-md transition-all duration-300 glow-purple">Start</button>
+                <button id="reset-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-8 rounded-full shadow-md transition-all duration-300">Reset</button>
+            </div>
+            <p id="pomodoro-count-display" class="mt-4 text-gray-400 text-sm">Cycles Completed: 0</p>
+        </div>
+
+        <!-- Fitness Tracker Section -->
+        <div id="fitness" class="tab-content text-center">
+            <h1 class="text-3xl font-bold mb-4 text-cyan-400">Fitness Tracker</h1>
+            
+            <!-- Today's Progress Section -->
+            <div class="bg-gray-800 p-6 rounded-xl my-4 text-left glow-cyan">
+                <h2 class="text-xl font-bold text-cyan-400 mb-2">Today's Progress</h2>
+                <div class="flex justify-between items-center text-gray-200">
+                    <p class="font-semibold">Steps:</p>
+                    <p id="today-steps" class="text-lg font-light text-cyan-200">0</p>
+                </div>
+                <div class="flex justify-between items-center text-gray-200 mt-2">
+                    <p class="font-semibold">Calories:</p>
+                    <p id="today-calories" class="text-lg font-light text-cyan-200">0</p>
+                </div>
+            </div>
+
+            <!-- Daily Step Goal Section -->
+            <div class="bg-gray-800 p-6 rounded-xl my-4 text-left glow-cyan">
+                <h2 class="text-xl font-bold text-cyan-400 mb-2">Daily Step Goal</h2>
+                <div class="flex items-center space-x-4 mb-2">
+                    <input type="number" id="goal-input" placeholder="Set your goal..." class="w-2/3 p-2 rounded-lg border border-gray-600 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-200">
+                    <p id="goal-text" class="text-gray-400 text-sm">0 / 0 steps</p>
+                </div>
+                <div class="w-full progress-bar-bg rounded-full h-2.5">
+                    <div id="goal-progress-bar" class="progress-bar-fill h-2.5 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-4">
+                <!-- Live Step Counter Section -->
+                <div class="flex-1 text-center bg-gray-800 p-4 rounded-xl glow-cyan">
+                    <h2 class="text-xl font-bold text-cyan-400 mb-2">Live Step Counter</h2>
+                    <p id="steps-display" class="text-5xl font-light mb-2">0</p>
+                    <button id="walk-btn" class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-6 rounded-full shadow-md transition-all duration-300 glow-cyan">Start Walk</button>
+                    <p id="walk-timer" class="text-gray-400 text-sm mt-2 hidden">00:00</p>
+                </div>
+                
+                <!-- Manual Log & Calorie Input -->
+                <div class="flex-1 flex flex-col space-y-4">
+                    <input type="number" id="steps-input" placeholder="Manual steps..." class="w-full p-3 rounded-xl border border-gray-700 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-200">
+                    <input type="number" id="calories-input" placeholder="Calories burned..." class="w-full p-3 rounded-xl border border-gray-700 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-200">
+                    <button id="log-fitness-btn" class="bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition-all duration-300 glow-cyan">Log Data</button>
+                </div>
+            </div>
+
+            <!-- Chart Type Selection -->
+            <div class="flex justify-center space-x-4 my-4">
+                <button class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 px-4 rounded-full transition-colors duration-200" onclick="renderChart('bar')">Bar Chart</button>
+                <button class="bg-gray-800 hover:bg-gray-700 text-white text-sm py-2 px-4 rounded-full transition-colors duration-200" onclick="renderChart('line')">Line Chart</button>
+            </div>
+            
+            <div class="mt-8">
+                <canvas id="fitnessChart"></canvas>
+            </div>
+
+            <!-- Logged Data List -->
+            <div class="mt-8 text-left">
+                <h3 class="text-xl font-bold mb-2">Recent Logs</h3>
+                <ul id="fitness-log-list" class="space-y-3">
+                    <!-- Logs will be dynamically added here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Shared Task List Section -->
+        <div class="task-list-section pt-4 border-t border-gray-700 mt-8">
+            <h2 class="text-2xl font-bold mb-4">My Tasks</h2>
+            <div class="flex space-x-2 mb-4">
+                <input type="text" id="task-input" placeholder="Add a new task..." class="flex-1 p-3 rounded-xl border border-gray-700 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200">
+                <button id="add-task-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md transition-all duration-300 glow-purple">Add</button>
+            </div>
+            
+            <ul id="task-list" class="space-y-3 text-left">
+                <!-- Task items will be dynamically added here -->
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // --- Tab Logic ---
+        /**
+         * Hides all tabs and shows the specified tab.
+         * @param {string} tabId - The ID of the tab to show ('pomodoro' or 'fitness').
+         */
+        const showTab = (tabId) => {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+
+            // Add active class to the tab button
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.onclick.toString().includes(tabId)) {
+                    btn.classList.add('active');
+                }
+            });
+        };
+
+        // --- Pomodoro Timer Logic ---
+        const timerDisplay = document.getElementById('timer-display');
+        const timerLabel = document.getElementById('timer-label');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const pomodoroCountDisplay = document.getElementById('pomodoro-count-display');
+
+        let timerInterval;
+        let isRunning = false;
+        let sessionType = 'work';
+        let timeRemaining = 25 * 60;
+        let pomodoroCount = 0;
+
+        const WORK_TIME = 25 * 60;
+        const BREAK_TIME = 5 * 60;
+        const LONG_BREAK_TIME = 15 * 60;
+
+        /**
+         * Formats a time in seconds into a "mm:ss" string.
+         * @param {number} seconds - The time in seconds.
+         * @returns {string} The formatted time string.
+         */
+        const formatTime = (seconds) => {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        };
+
+        /**
+         * Updates the timer display and handles the countdown logic.
+         */
+        const updateTimer = () => {
+            timeRemaining--;
+            timerDisplay.textContent = formatTime(timeRemaining);
+            document.title = `(${formatTime(timeRemaining)}) Pomodoro Timer`;
+
+            if (timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                playAlarmSound();
+
+                if (sessionType === 'work') {
+                    // Increment and display the Pomodoro count
+                    pomodoroCount++;
+                    pomodoroCountDisplay.textContent = `Cycles Completed: ${pomodoroCount}`;
+                    
+                    // Check for a long break
+                    if (pomodoroCount % 4 === 0) {
+                        sessionType = 'long-break';
+                        timeRemaining = LONG_BREAK_TIME;
+                        timerLabel.textContent = 'Long Break Session';
+                    } else {
+                        sessionType = 'break';
+                        timeRemaining = BREAK_TIME;
+                        timerLabel.textContent = 'Short Break Session';
+                    }
+                } else {
+                    // Switch back to work after a break
+                    sessionType = 'work';
+                    timeRemaining = WORK_TIME;
+                    timerLabel.textContent = 'Work Session';
+                }
+                startTimer();
+            }
+        };
+
+        const startTimer = () => {
+            if (!isRunning) {
+                isRunning = true;
+                startBtn.textContent = 'Pause';
+                timerInterval = setInterval(updateTimer, 1000);
+            } else {
+                pauseTimer();
+            }
+        };
+
+        const pauseTimer = () => {
+            isRunning = false;
+            startBtn.textContent = 'Start';
+            clearInterval(timerInterval);
+        };
+
+        const resetTimer = () => {
+            pauseTimer();
+            sessionType = 'work';
+            timeRemaining = WORK_TIME;
+            pomodoroCount = 0;
+            timerLabel.textContent = 'Work Session';
+            timerDisplay.textContent = formatTime(timeRemaining);
+            pomodoroCountDisplay.textContent = `Cycles Completed: ${pomodoroCount}`;
+            document.title = 'Futuristic Productivity App';
+        };
+
+        const playAlarmSound = () => {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 440;
+                
+                gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 1);
+            } catch (e) {
+                console.error("Web Audio API not supported in this browser.", e);
+            }
+        };
+
+        startBtn.addEventListener('click', startTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // --- Task List Logic (Shared) ---
+        const taskInput = document.getElementById('task-input');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const taskList = document.getElementById('task-list');
+
+        let tasks = [];
+
+        const renderTasks = () => {
+            taskList.innerHTML = '';
+            if (tasks.length === 0) {
+                const emptyMessage = document.createElement('li');
+                emptyMessage.textContent = "No tasks yet. Add one above!";
+                emptyMessage.className = "text-gray-400 italic";
+                taskList.appendChild(emptyMessage);
+                return;
+            }
+
+            tasks.forEach((task, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = "bg-gray-800 p-4 rounded-xl shadow-sm flex items-center justify-between transition-colors duration-200";
+
+                const taskText = document.createElement('span');
+                taskText.textContent = task;
+                taskText.className = "text-gray-200 break-words flex-1";
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.className = "bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-2 px-4 rounded-full ml-4 transition-colors duration-200";
+                deleteBtn.onclick = () => deleteTask(index);
+
+                listItem.appendChild(taskText);
+                listItem.appendChild(deleteBtn);
+                taskList.appendChild(listItem);
+            });
+        };
+
+        const addTask = () => {
+            const taskText = taskInput.value.trim();
+            if (taskText !== "") {
+                tasks.push(taskText);
+                taskInput.value = '';
+                saveTasks();
+                renderTasks();
+            }
+        };
+
+        const deleteTask = (index) => {
+            tasks.splice(index, 1);
+            saveTasks();
+            renderTasks();
+        };
+
+        const saveTasks = () => {
+            localStorage.setItem('pomodoroTasks', JSON.stringify(tasks));
+        };
+
+        const loadTasks = () => {
+            const savedTasks = localStorage.getItem('pomodoroTasks');
+            if (savedTasks) {
+                tasks = JSON.parse(savedTasks);
+            }
+            renderTasks();
+        };
+
+        addTaskBtn.addEventListener('click', addTask);
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        // --- Fitness Tracker Logic ---
+        const stepsInput = document.getElementById('steps-input');
+        const caloriesInput = document.getElementById('calories-input');
+        const logFitnessBtn = document.getElementById('log-fitness-btn');
+        const fitnessChartCanvas = document.getElementById('fitnessChart');
+        const fitnessLogList = document.getElementById('fitness-log-list');
+        const todayStepsDisplay = document.getElementById('today-steps');
+        const todayCaloriesDisplay = document.getElementById('today-calories');
+        const goalInput = document.getElementById('goal-input');
+        const goalText = document.getElementById('goal-text');
+        const goalProgressBar = document.getElementById('goal-progress-bar');
+        
+        let fitnessData = {
+            labels: [],
+            steps: [],
+            calories: []
+        };
+        let fitnessChart;
+        let currentChartType = 'bar'; // default chart type
+        let dailyStepGoal = 10000; // Default goal
+
+        // --- Live Step Counter Logic ---
+        const stepsDisplay = document.getElementById('steps-display');
+        const walkBtn = document.getElementById('walk-btn');
+        const walkTimerDisplay = document.getElementById('walk-timer');
+        
+        let walkInterval;
+        let isWalking = false;
+        let walkDuration = 0; // in seconds
+        let currentSteps = 0;
+        const STEPS_PER_MINUTE = 100;
+
+        const updateWalkTimer = () => {
+            walkDuration++;
+            const minutes = Math.floor(walkDuration / 60);
+            const seconds = walkDuration % 60;
+            walkTimerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+            // Calculate steps based on duration
+            currentSteps = Math.floor(walkDuration / 60 * STEPS_PER_MINUTE);
+            stepsDisplay.textContent = currentSteps;
+        };
+
+        const startWalk = () => {
+            if (!isWalking) {
+                isWalking = true;
+                walkBtn.textContent = 'Stop Walk';
+                walkTimerDisplay.classList.remove('hidden');
+                walkInterval = setInterval(updateWalkTimer, 1000);
+            } else {
+                stopWalk();
+            }
+        };
+
+        const stopWalk = () => {
+            isWalking = false;
+            walkBtn.textContent = 'Start Walk';
+            clearInterval(walkInterval);
+        };
+        
+        walkBtn.addEventListener('click', startWalk);
+        
+        /**
+         * Initializes or updates the Chart.js graph with the given type.
+         * @param {string} type - The chart type ('bar' or 'line').
+         */
+        const renderChart = (type) => {
+            currentChartType = type;
+            if (fitnessChart) {
+                fitnessChart.destroy();
+            }
+            fitnessChart = new Chart(fitnessChartCanvas, {
+                type: type,
+                data: {
+                    labels: fitnessData.labels,
+                    datasets: [{
+                        label: 'Steps',
+                        data: fitnessData.steps,
+                        backgroundColor: '#06b6d4', /* Cyan */
+                        borderColor: '#06b6d4', /* Cyan */
+                        borderWidth: 1,
+                        tension: type === 'line' ? 0.4 : 0,
+                        fill: false
+                    }, {
+                        label: 'Calories Burned',
+                        data: fitnessData.calories,
+                        backgroundColor: '#14b8a6', /* Teal */
+                        borderColor: '#14b8a6', /* Teal */
+                        borderWidth: 1,
+                        tension: type === 'line' ? 0.4 : 0,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'white' }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: 'white' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        /**
+         * Renders the list of fitness logs.
+         */
+        const renderFitnessLogs = () => {
+            fitnessLogList.innerHTML = '';
+            fitnessData.labels.forEach((date, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = "bg-gray-800 p-3 rounded-xl shadow-sm flex items-center justify-between";
+                listItem.innerHTML = `
+                    <span class="text-gray-200">${date}: ${fitnessData.steps[index]} steps, ${fitnessData.calories[index]} calories</span>
+                    <button class="delete-log-btn bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-1 px-3 rounded-full transition-colors duration-200">Delete</button>
+                `;
+                listItem.querySelector('.delete-log-btn').addEventListener('click', () => {
+                    deleteFitnessLog(index);
+                });
+                fitnessLogList.appendChild(listItem);
+            });
+        };
+
+        /**
+         * Updates the "Today's Progress" summary section and the step goal tracker.
+         */
+        const updateTodaySummary = () => {
+            const today = new Date().toLocaleDateString();
+            const todayIndex = fitnessData.labels.indexOf(today);
+            let todaySteps = 0;
+            let todayCalories = 0;
+
+            if (todayIndex > -1) {
+                todaySteps = Number(fitnessData.steps[todayIndex]);
+                todayCalories = Number(fitnessData.calories[todayIndex]);
+            }
+
+            todayStepsDisplay.textContent = todaySteps;
+            todayCaloriesDisplay.textContent = todayCalories;
+
+            // Update Goal Tracker
+            const goal = Number(dailyStepGoal);
+            if (!isNaN(goal) && goal > 0) {
+                const percentage = Math.min(100, (todaySteps / goal) * 100);
+                goalProgressBar.style.width = `${percentage}%`;
+                goalText.textContent = `${todaySteps} / ${goal} steps`;
+            } else {
+                goalProgressBar.style.width = '0%';
+                goalText.textContent = `${todaySteps} / 0 steps`;
+            }
+        };
+
+        /**
+         * Logs fitness data and saves it to localStorage.
+         */
+        const logFitnessData = () => {
+            const steps = isWalking ? currentSteps : stepsInput.value;
+            const calories = caloriesInput.value;
+
+            if (steps === '' && calories === '') {
+                // If both are empty, check if a walk is in progress.
+                if (isWalking) {
+                    stopWalk();
+                } else {
+                    return;
+                }
+            }
+
+            const today = new Date().toLocaleDateString();
+
+            const existingIndex = fitnessData.labels.indexOf(today);
+            if (existingIndex > -1) {
+                // If a walk is in progress, the steps are an addition
+                const stepsToAdd = isWalking ? currentSteps : Number(steps);
+                fitnessData.steps[existingIndex] = Number(fitnessData.steps[existingIndex]) + stepsToAdd;
+                // Add calories if they exist, otherwise just keep the current value.
+                if (calories !== '') {
+                    fitnessData.calories[existingIndex] = Number(fitnessData.calories[existingIndex]) + Number(calories);
+                }
+            } else {
+                fitnessData.labels.push(today);
+                fitnessData.steps.push(isWalking ? currentSteps : steps);
+                fitnessData.calories.push(calories !== '' ? calories : 0);
+            }
+
+            // Reset inputs and walk state
+            stepsInput.value = '';
+            caloriesInput.value = '';
+            stepsDisplay.textContent = '0';
+            walkDuration = 0;
+            walkTimerDisplay.textContent = '00:00';
+            if(isWalking) {
+                stopWalk();
+                walkTimerDisplay.classList.add('hidden');
+            }
+
+
+            saveFitnessData();
+            renderChart(currentChartType);
+            renderFitnessLogs();
+            updateTodaySummary();
+        };
+
+        /**
+         * Deletes a fitness log at a specific index.
+         * @param {number} index - The index of the log to delete.
+         */
+        const deleteFitnessLog = (index) => {
+            if (index > -1 && index < fitnessData.labels.length) {
+                fitnessData.labels.splice(index, 1);
+                fitnessData.steps.splice(index, 1);
+                fitnessData.calories.splice(index, 1);
+                saveFitnessData();
+                renderChart(currentChartType);
+                renderFitnessLogs();
+                updateTodaySummary();
+            }
+        };
+
+        /**
+         * Saves the fitness data object to localStorage.
+         */
+        const saveFitnessData = () => {
+            localStorage.setItem('fitnessData', JSON.stringify(fitnessData));
+            localStorage.setItem('dailyStepGoal', dailyStepGoal);
+        };
+
+        /**
+         * Loads fitness data from localStorage when the page loads.
+         */
+        const loadFitnessData = () => {
+            const savedData = localStorage.getItem('fitnessData');
+            if (savedData) {
+                fitnessData = JSON.parse(savedData);
+            }
+            
+            const savedGoal = localStorage.getItem('dailyStepGoal');
+            if (savedGoal) {
+                dailyStepGoal = Number(savedGoal);
+                goalInput.value = dailyStepGoal;
+            } else {
+                goalInput.value = dailyStepGoal; // Set initial value if none is saved
+            }
+
+            renderChart(currentChartType);
+            renderFitnessLogs();
+            updateTodaySummary();
+        };
+
+        logFitnessBtn.addEventListener('click', logFitnessData);
+
+        // Event listener for the goal input field
+        goalInput.addEventListener('input', (e) => {
+            dailyStepGoal = e.target.value;
+            if (dailyStepGoal === '') {
+                dailyStepGoal = 0; // Prevent setting goal to null
+            }
+            saveFitnessData();
+            updateTodaySummary();
+        });
+
+        // --- Initial App Setup ---
+        window.onload = () => {
+            // Initial render of the Pomodoro timer display
+            timerDisplay.textContent = formatTime(timeRemaining);
+            // Load tasks and fitness data from storage
+            loadTasks();
+            loadFitnessData();
+            // Show the pomodoro tab by default
+            showTab('pomodoro');
+        };
+    </script>
+</body>
+</html>
